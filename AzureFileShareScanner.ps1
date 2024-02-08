@@ -30,7 +30,6 @@ foreach ($subscription in $subscriptions) {
         $context = $storageAccount.Context
         # Get all file shares in the storage account
             $fileShares = Get-AzStorageShare -Context $context
-            Write-Host " FileShare: $fileShares"
             # Iterate through each file share
             foreach ($fileShare in $fileShares) {
 
