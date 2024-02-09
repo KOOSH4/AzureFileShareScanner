@@ -11,6 +11,13 @@ Date     : 08.02.2024
 
 #>
 
+# Import the required module
+Import-Module Az.Accounts
+Import-Module Az.Storage
+
+# Login to your Azure account
+Connect-AzAccount
+
 # Get all subscriptions
 $subscriptions = Get-AzSubscription
 
@@ -27,15 +34,21 @@ foreach ($subscription in $subscriptions) {
 
     # Loop through each storage account
     foreach ($storageAccount in $storageAccounts) {
+        # Get all file shares
+        $fileShares = Get-AzStorageShare -Context $storageAccount.Context
 
-        # Get the storage account context
-        $context = $storageAccount.Context
-        # Get all file shares in the storage account
-            $fileShares = Get-AzStorageShare -Context $context
-            Write-Host " FileShare: $fileShares"
-            # Iterate through each file share
-            foreach ($fileShare in $fileShares) {
+        # Loop through each file share
+        foreach ($fileShare in $fileShares) {
+            # Create a custom object
+            $outputObject = New-Object PSObject -Property @{
+                "Subscription Name" = $subscription.Name
+                "Subscription ID" = $subscription.Id
+                "Resource Group" = $storageAccount.ResourceGroupName
+                "Storage Account" = $storageAccount.StorageAccountName
+                "File Share" = $fileShare.Name
+            }
 
+            # Write the object to the console
                 # Print information about the file share
                 write-host "  ### File Share found ### "
                 Write-Host "Subscription Name: $($subscription.Name)"
@@ -44,6 +57,12 @@ foreach ($subscription in $subscriptions) {
                 Write-Host "Storage Account: $($storageAccount.StorageAccountName)"
                 Write-Host "File Share: $($fileShare.Name)"
                 Write-Host "-----------------------------"
-            }
+
+            # Add the object to the output array
+            $outputArray += $outputObject
+        }
     }
 }
+
+# Write the output array to a CSV file
+$outputArray | Export-Csv -Path 'AllFileSharesInTenant.csv' -NoTypeInformation
