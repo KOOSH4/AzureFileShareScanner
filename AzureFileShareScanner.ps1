@@ -14,34 +14,47 @@ Date     : 08.02.2024
 # Get all subscriptions
 $subscriptions = Get-AzSubscription
 
-# Iterate through each subscription
+# Create an empty array to store the output
+$outputArray = @()
+
+# Loop through each subscription
 foreach ($subscription in $subscriptions) {
-
     # Select the subscription
-    Select-AzSubscription -Subscription $subscription
+    Set-AzContext -Subscription $subscription.Id
 
-    # Get all storage accounts in the subscription
+    # Get all storage accounts
     $storageAccounts = Get-AzStorageAccount
 
-    # Iterate through each storage account
+    # Loop through each storage account
     foreach ($storageAccount in $storageAccounts) {
+        # Get all file shares
+        $fileShares = Get-AzStorageShare -Context $storageAccount.Context
 
-        # Get the storage account context
-        $context = $storageAccount.Context
-        # Get all file shares in the storage account
-            $fileShares = Get-AzStorageShare -Context $context
-            Write-Host " FileShare: $fileShares"
-            # Iterate through each file share
-            foreach ($fileShare in $fileShares) {
-
-                # Print information about the file share
-                write-host "  ### File Share found ### "
-                Write-Host "Subscription Name: $($subscription.Name)"
-                Write-Host "Subscription ID: $($subscription.Id)"
-                Write-Host "Resource Group: $($storageAccount.ResourceGroupName)"
-                Write-Host "Storage Account: $($storageAccount.StorageAccountName)"
-                Write-Host "File Share: $($fileShare.Name)"
-                Write-Host "-----------------------------"
+        # Loop through each file share
+        foreach ($fileShare in $fileShares) {
+            # Create a custom object
+            $outputObject = New-Object PSObject -Property @{
+                "Subscription Name" = $subscription.Name
+                "Subscription ID" = $subscription.Id
+                "Resource Group" = $storageAccount.ResourceGroupName
+                "Storage Account" = $storageAccount.StorageAccountName
+                "File Share" = $fileShare.Name
             }
+
+            # Write the object to the console
+            write-host "  ### File Share found ### "
+            Write-Host "Subscription Name: $($outputObject.'Subscription Name')"
+            Write-Host "Subscription ID: $($outputObject.'Subscription ID')"
+            Write-Host "Resource Group: $($outputObject.'Resource Group')"
+            Write-Host "Storage Account: $($outputObject.'Storage Account')"
+            Write-Host "File Share: $($outputObject.'File Share')"
+            Write-Host "-----------------------------"
+
+            # Add the object to the output array
+            $outputArray += $outputObject
+        }
     }
 }
+
+# Write the output array to a CSV file
+$outputArray | Export-Csv -Path 'AllFileSharesInTenant.csv' -NoTypeInformation
